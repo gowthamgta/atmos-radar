@@ -1,0 +1,61 @@
+name: radar
+
+# All-India Doppler Weather Radar Unified Composite Pipeline
+# Generates transparent multi-ring stacked radar mosaics for AtmosIQ (https://github.com/gowthamgta/Atmos)
+# Published with GitHub Pages at: https://gowthamgta.github.io/atmos-radar/
+# Triggered every 5 minutes by cron-job.org via workflow_dispatch:
+# POST https://api.github.com/repos/gowthamgta/atmos-radar/actions/workflows/radar.yml/dispatches
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+concurrency:
+  group: radar-v1
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+    steps:
+      - name: Checkout Atmos repository
+        uses: actions/checkout@v4
+        with:
+          repository: gowthamgta/Atmos
+          path: atmos
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: atmos/package-lock.json
+
+      - name: Install dependencies
+        working-directory: atmos
+        run: npm ci
+
+      - name: Run radar pipeline
+        working-directory: atmos
+        run: npx tsx scripts/radar-pipeline.ts --out "$GITHUB_WORKSPACE/site"
+
+      - name: Add .nojekyll
+        run: touch site/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+          retention-days: 1
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
