@@ -6,10 +6,9 @@ name: radar
 # Triggered every 5 minutes by cron-job.org via workflow_dispatch:
 # POST https://api.github.com/repos/gowthamgta/atmos-radar/actions/workflows/radar.yml/dispatches
 
+# Not on GitHub's own schedule: it runs late and would start a second run beside cron-job.org's (two deploys every 5 minutes).
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/5 * * * *'
 
 concurrency:
   group: radar-v1
